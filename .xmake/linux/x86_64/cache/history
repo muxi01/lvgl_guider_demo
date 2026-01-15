@@ -1,0 +1,30 @@
+{
+    cmdlines = {
+        "xmake lua /tmp/.xmake1000/3.0.6+HEAD.8be7de5/modules/private/utils/statistics.lua",
+        "xmake build",
+        "xmake clean",
+        "xmake build",
+        "xmake build",
+        "xmake c",
+        "xmake b",
+        "xmake b",
+        "xmake b",
+        "xmake c",
+        "xmake b",
+        "xmake b",
+        "xmake b",
+        "xmake b",
+        "xmake b",
+        "xmake b",
+        "xmake b",
+        "xmake b",
+        "xmake b",
+        "xmake b",
+        "xmake b",
+        "xmake b",
+        "xmake b",
+        "xmake f -m debug",
+        "xmake ",
+        "xmake c --root"
+    }
+}

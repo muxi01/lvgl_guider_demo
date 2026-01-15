@@ -1,0 +1,24 @@
+{
+    files = {
+        "lvgl/src/drivers/sdl/lv_sdl_mouse.c"
+    },
+    depfiles_format = "gcc",
+    values = {
+        "/usr/bin/gcc",
+        {
+            "-m64",
+            "-fvisibility=hidden",
+            "-O3",
+            "-Ilvgl",
+            "-Ilvgl/src",
+            "-Icustom",
+            "-Igenerated",
+            "-Iports/linux",
+            "-I/usr/include/drm",
+            "-DLV_CONF_INCLUDE_SIMPLE=1",
+            "-DNDEBUG"
+        }
+    },
+    depfiles = "lv_sdl_mouse.o: lvgl/src/drivers/sdl/lv_sdl_mouse.c  lvgl/src/drivers/sdl/lv_sdl_mouse.h lvgl/src/drivers/sdl/lv_sdl_window.h  lvgl/src/drivers/sdl/../../display/lv_display.h  lvgl/src/drivers/sdl/../../display/../misc/lv_types.h  lvgl/src/drivers/sdl/../../display/../misc/../lv_conf_internal.h  lvgl/src/drivers/sdl/../../display/../misc/../lv_conf_kconfig.h  ports/linux/lv_conf.h custom/lv_conf_ext.h  lvgl/src/drivers/sdl/../../display/../misc/lv_timer.h  lvgl/src/drivers/sdl/../../display/../misc/../tick/lv_tick.h  lvgl/src/drivers/sdl/../../display/../misc/../tick/../lv_conf_internal.h  lvgl/src/drivers/sdl/../../display/../misc/../tick/../misc/lv_types.h  lvgl/src/drivers/sdl/../../display/../misc/lv_types.h  lvgl/src/drivers/sdl/../../display/../misc/lv_ll.h  lvgl/src/drivers/sdl/../../display/../misc/lv_event.h  lvgl/src/drivers/sdl/../../display/../misc/lv_array.h  lvgl/src/drivers/sdl/../../display/../misc/lv_color.h  lvgl/src/drivers/sdl/../../display/../misc/lv_assert.h  lvgl/src/drivers/sdl/../../display/../misc/lv_log.h  lvgl/src/drivers/sdl/../../display/../misc/../stdlib/lv_mem.h  lvgl/src/drivers/sdl/../../display/../misc/../stdlib/../lv_conf_internal.h  lvgl/src/drivers/sdl/../../display/../misc/../stdlib/lv_string.h  lvgl/src/drivers/sdl/../../display/../misc/../stdlib/../misc/lv_types.h  lvgl/src/drivers/sdl/../../display/../misc/lv_math.h  lvgl/src/drivers/sdl/../../display/../misc/lv_palette.h  lvgl/src/drivers/sdl/../../display/../misc/lv_color.h  lvgl/src/drivers/sdl/../../display/../misc/lv_color_op.h  lvgl/src/drivers/sdl/../../display/../misc/lv_area.h  lvgl/src/drivers/sdl/../../indev/lv_indev.h  lvgl/src/drivers/sdl/../../indev/../core/lv_group.h  lvgl/src/drivers/sdl/../../indev/../core/../lv_conf_internal.h  lvgl/src/drivers/sdl/../../indev/../core/../misc/lv_types.h  lvgl/src/drivers/sdl/../../indev/../core/../misc/lv_ll.h  lvgl/src/drivers/sdl/../../indev/../misc/lv_area.h  lvgl/src/drivers/sdl/../../indev/../misc/lv_timer.h  lvgl/src/drivers/sdl/../../indev/../misc/lv_event.h  lvgl/src/drivers/sdl/../../core/lv_group.h  lvgl/src/drivers/sdl/../../stdlib/lv_string.h  lvgl/src/drivers/sdl/lv_sdl_private.h  lvgl/src/drivers/sdl/../../misc/lv_types.h\
+"
+}
