@@ -1252,7 +1252,7 @@
 #define LV_USE_LINUX_DRM 1
 
 #if LV_USE_LINUX_DRM
-#define LV_LINUX_DRM_CARD "/dev/drm/card0"
+#define LV_LINUX_DRM_CARD "/dev/dri/card0"
 
 /* Use the MESA GBM library to allocate DMA buffers that can be
  * shared across sub-systems and libraries using the Linux DMA-BUF API.
