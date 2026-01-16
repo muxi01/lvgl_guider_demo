@@ -114,7 +114,24 @@ static void hal_init(void)
 #endif
 
     lv_linux_drm_set_file(disp, LV_LINUX_DRM_CARD, -1);
-#else
+#elif LV_USE_LINUX_FBDEV 
+    disp = lv_linux_fbdev_create();
+#if LV_USE_EVDEV
+    touch = lv_evdev_create(LV_INDEV_TYPE_POINTER, LV_EVDEV_DEVICE);
+    if(touch != NULL) {
+        lv_indev_set_display(touch, disp);
+
+        /* Set the cursor icon */
+        LV_IMAGE_DECLARE(mouse_cursor_icon);
+        lv_obj_t * cursor_obj = lv_image_create(lv_screen_active());
+        lv_image_set_src(cursor_obj, &mouse_cursor_icon);
+        lv_indev_set_cursor(touch, cursor_obj);
+    } else {
+        printf("Warnning: Can't open %s device, please run 'evtest' to check.\n", LV_EVDEV_DEVICE);
+    }
+#endif
+    lv_linux_fbdev_set_file(disp, LV_LINUX_FBDEV_FB);
+#else 
 #error Unsupported Backend
 #endif
 }
