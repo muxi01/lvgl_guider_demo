@@ -94,7 +94,8 @@ void video_play(lv_ui *ui)
 
 }
 
+void keyboard_init(lv_ui *ui);
 void init_keyboard(lv_ui *ui)
 {
-
+    keyboard_init(ui);
 }

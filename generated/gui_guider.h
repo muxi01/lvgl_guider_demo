@@ -33,6 +33,7 @@ typedef struct
 	lv_obj_t *screen_btn_done;
 	lv_obj_t *screen_btn_done_label;
 	lv_obj_t *screen_label_info;
+	lv_obj_t *g_kb_top_layer;
 }lv_ui;
 
 typedef void (*ui_setup_scr_t)(lv_ui * ui);

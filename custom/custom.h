@@ -16,6 +16,9 @@ extern "C" {
 #include "gui_guider.h"
 
 void custom_init(lv_ui *ui);
+void keyboard_init(lv_ui *ui);
+
+
 
 #ifdef __cplusplus
 }
