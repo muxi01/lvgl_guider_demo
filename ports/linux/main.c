@@ -16,17 +16,12 @@
 #include "events_init.h"
 #include "custom.h"
 #include "main.h"
+#include <pthread.h>
+
 
 lv_ui guider_ui;
 pthread_t video_thread;
 st_parmaters setting;
-
-void *videoPlayThread(void *args)
-{
-    for (;;) {
-        usleep( 1000);
-    }
-}
 
 
 static void hal_init(void)
@@ -168,7 +163,7 @@ int main(int argc,char **argv)
     setup_ui(&guider_ui);
     events_init(&guider_ui);
     custom_init(&guider_ui);
-    pthread_create(&video_thread, NULL, videoPlayThread, NULL);
+    pthread_create(&video_thread, NULL, custom_thread, &guider_ui);
 
     uint32_t idle_time;
     /* Handle LVGL tasks */

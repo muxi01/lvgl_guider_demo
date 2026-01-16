@@ -7,15 +7,16 @@
 * terms, then you may not retain, install, activate or otherwise use the software.
 */
 
-#ifndef GUIDER_CUSTOMER_FONTS_H
-#define GUIDER_CUSTOMER_FONTS_H
+#ifndef __CUSTOM_H_
+#define __CUSTOM_H_
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "lv_font.h"
+
+
 
 #ifdef __cplusplus
 }
 #endif
-#endif
+#endif /* EVENT_CB_H_ */

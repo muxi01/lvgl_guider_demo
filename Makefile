@@ -24,6 +24,8 @@ LDFLAGS += -ldrm -lSDL2
 BIN = demo.bin
 
 
+# sudo apt-get install libjpeg-turbo8-dev
+
 #Collect the files to compile
 
 CSRCS += $(shell find $(LVGL_DEMO_DIR)/custom/ -type f -name '*.c')

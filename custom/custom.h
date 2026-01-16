@@ -14,10 +14,10 @@ extern "C" {
 #endif
 
 #include "gui_guider.h"
+#include "main.h"
 
 void custom_init(lv_ui *ui);
-void keyboard_init(lv_ui *ui);
-
+void *custom_thread(void *args);
 
 
 #ifdef __cplusplus

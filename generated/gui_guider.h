@@ -19,21 +19,21 @@ extern "C" {
 typedef struct
 {
   
-	lv_obj_t *screen;
-	bool screen_del;
-	lv_obj_t *screen_canvas_screen;
-	lv_obj_t *screen_img_display;
-	lv_obj_t *screen_btn_key_on;
-	lv_obj_t *screen_btn_key_on_label;
-	lv_obj_t *screen_label_waiting;
-	lv_obj_t *screen_label_1;
-	lv_obj_t *screen_cont_auth;
-	lv_obj_t *screen_label_device_id;
-	lv_obj_t *screen_txt_code;
-	lv_obj_t *screen_btn_done;
-	lv_obj_t *screen_btn_done_label;
-	lv_obj_t *screen_label_info;
-	lv_obj_t *g_kb_top_layer;
+	lv_obj_t *scr0;
+	bool scr0_del;
+	lv_obj_t *scr0_img_display;
+	lv_obj_t *scr0_lb_connecting;
+	lv_obj_t *scr0_lb_status0;
+	lv_obj_t *scr0_cvs_displayer;
+	lv_obj_t *scr0_btn_enable_key;
+	lv_obj_t *scr0_btn_enable_key_label;
+	lv_obj_t *scr0_contaier_auth;
+	lv_obj_t *scr0_auth_lb_device_id;
+	lv_obj_t *scr0_auth_txt_code;
+	lv_obj_t *scr0_auth_btn_done;
+	lv_obj_t *scr0_auth_btn_done_label;
+	lv_obj_t *scr0_auth_lb_name;
+	lv_obj_t *scr0_g_kb_top_layer;
 }lv_ui;
 
 typedef void (*ui_setup_scr_t)(lv_ui * ui);
@@ -61,12 +61,12 @@ void init_keyboard(lv_ui *ui);
 extern lv_ui guider_ui;
 
 
-void setup_scr_screen(lv_ui *ui);
+void setup_scr_scr0(lv_ui *ui);
 LV_IMAGE_DECLARE(_horse_RGB565A8_800x480);
 
 LV_FONT_DECLARE(lv_font_montserratMedium_16)
-LV_FONT_DECLARE(lv_font_montserratMedium_18)
 LV_FONT_DECLARE(lv_font_montserratMedium_28)
+LV_FONT_DECLARE(lv_font_montserratMedium_18)
 LV_FONT_DECLARE(lv_font_montserratMedium_12)
 
 
