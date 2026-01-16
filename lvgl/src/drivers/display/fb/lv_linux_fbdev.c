@@ -95,6 +95,44 @@ static uint32_t tick_get_cb(void);
 /**********************
  *   GLOBAL FUNCTIONS
  **********************/
+#if FBDEV_SETTING 
+lv_display_t * lv_linux_fbdev_create(int w,int h,int r)
+{
+    lv_tick_set_cb(tick_get_cb);
+
+    lv_linux_fb_t * dsc = lv_malloc_zeroed(sizeof(lv_linux_fb_t));
+    LV_ASSERT_MALLOC(dsc);
+    if(dsc == NULL) return NULL;
+
+    lv_display_t * disp = lv_display_create(w, h);
+    if(disp == NULL) {
+        lv_free(dsc);
+        return NULL;
+    }
+    dsc->fbfd = -1;
+    
+    lv_display_set_driver_data(disp, dsc);
+    lv_display_set_flush_cb(disp, flush_cb);
+
+    switch(r) {
+        case 90:
+            lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_90);
+        break;
+        case 180:
+            lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_180);
+        break;
+        case 270:
+            lv_display_set_rotation(disp, LV_DISPLAY_ROTATION_270);
+        break;
+        default:
+        break;
+    }
+
+
+    return disp;
+}
+
+#else 
 
 lv_display_t * lv_linux_fbdev_create(void)
 {
@@ -115,6 +153,9 @@ lv_display_t * lv_linux_fbdev_create(void)
 
     return disp;
 }
+
+#endif 
+
 
 void lv_linux_fbdev_set_file(lv_display_t * disp, const char * file)
 {

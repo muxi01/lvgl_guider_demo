@@ -2,7 +2,7 @@
 # Makefile
 #
 CC ?= gcc
-LVGL_DEMO_DIR ?= ${shell pwd}/../..
+LVGL_DEMO_DIR ?= ${shell pwd}
 LVGL_PATH := $(LVGL_DEMO_DIR)/lvgl
 CFLAGS := -O0 -g  
 CFLAGS += -I$(LVGL_DEMO_DIR)

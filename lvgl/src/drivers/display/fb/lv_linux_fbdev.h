@@ -21,7 +21,7 @@ extern "C" {
 /*********************
  *      DEFINES
  *********************/
-
+#define FBDEV_SETTING 1
 /**********************
  *      TYPEDEFS
  **********************/
@@ -29,7 +29,11 @@ extern "C" {
 /**********************
  * GLOBAL PROTOTYPES
  **********************/
+#ifdef FBDEV_SETTING
+lv_display_t * lv_linux_fbdev_create(int w,int h,int r);
+#else 
 lv_display_t * lv_linux_fbdev_create(void);
+#endif 
 
 void lv_linux_fbdev_set_file(lv_display_t * disp, const char * file);
 
