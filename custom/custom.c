@@ -20,6 +20,7 @@
 #include "misc/lv_event.h"
 #include "misc/lv_types.h"
 #include <pthread.h>
+#include "images.h"
 
 /*********************
  *      DEFINES
@@ -81,25 +82,51 @@ extern st_parmaters setting;
 
 void set_connected_state(lv_ui *ui, bool state)
 {
-    lv_obj_set_flag(ui->scr0_btn_enable_key,LV_OBJ_FLAG_HIDDEN,false);
-    lv_obj_set_flag(ui->scr0_img_display,LV_OBJ_FLAG_HIDDEN,state == true);
-    lv_obj_set_flag(ui->scr0_cvs_displayer,LV_OBJ_FLAG_HIDDEN,state == false);
-    lv_obj_set_flag(ui->scr0_lb_status0,LV_OBJ_FLAG_HIDDEN,state == false);
-    lv_obj_set_flag(ui->scr0_lb_connecting,LV_OBJ_FLAG_HIDDEN,state == false);
+    lv_obj_set_flag(ui->scr0_btn_enable_key,LV_OBJ_FLAG_HIDDEN,true);
+    lv_obj_set_flag(ui->scr0_img_display,LV_OBJ_FLAG_HIDDEN,false);
+    lv_obj_set_flag(ui->scr0_cvs_displayer,LV_OBJ_FLAG_HIDDEN,true);
+    lv_obj_set_flag(ui->scr0_lb_status0,LV_OBJ_FLAG_HIDDEN,true);
+    lv_obj_set_flag(ui->scr0_lb_connecting,LV_OBJ_FLAG_HIDDEN,true);
 }
 
+
+void custom_image_show(lv_obj_t * obj,const unsigned char *data,long size,int w,int h)
+{
+    lv_image_dsc_t img;
+
+    img.header.magic =LV_IMAGE_HEADER_MAGIC;
+    img.header.cf   =LV_COLOR_FORMAT_RGB888;
+    img.header.flags =LV_IMAGE_FLAGS_CUSTOM_DRAW;
+
+    img.header.w =w;
+    img.header.h =h;
+    img.header.stride = w * 3;
+
+    img.data =data;
+    img.data_size =size;
+    lv_image_set_src(obj, &img);
+}
 
 void *custom_thread(void *args)
 {
     lv_ui *ui =(lv_ui *)args;
+    
+    int w,h;
+    long length;
+    unsigned char *buff;
+    int path_len =strlen(setting.image);
+    image_init();
     for (;;) {
-
-        
-        usleep( 1000);
+        if(path_len > 3) {
+            if(image_decode(setting.image,&buff,&length,&w,&h) >=0){
+                usleep(1000 * 1000);
+                custom_image_show(ui->scr0_img_display,buff,length,w,h);
+            }
+        }
+        usleep(1000);
     }
+    image_deinit();
 }
-
-
 
 
 void custom_init(lv_ui *ui)

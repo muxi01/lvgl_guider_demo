@@ -8,11 +8,12 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/linux/x86_64/debug/lvgl.bin",
-            "args": [],
+            "program": "${workspaceFolder}/demo.bin",
+            "args": [ "-i","${workspaceFolder}/pic.jpg" ],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
-            "environment": [],
+            "environment": [
+            ],
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [

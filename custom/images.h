@@ -7,14 +7,15 @@
 * terms, then you may not retain, install, activate or otherwise use the software.
 */
 
-#ifndef __CUSTOM_H_
-#define __CUSTOM_H_
+#ifndef __IMAGES_DEC_H_
+#define __IMAGES_DEC_H_
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-
+extern void image_init(void);
+extern void image_deinit(void);
+extern int image_decode(const char *jpg_path,unsigned char **buff,long *len,int *width,int *height);
 
 #ifdef __cplusplus
 }

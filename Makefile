@@ -7,7 +7,7 @@ LVGL_PATH := $(LVGL_DEMO_DIR)/lvgl
 CFLAGS := -O0 -g  
 CFLAGS += -I$(LVGL_DEMO_DIR)
 
-CFLAGS += -DLV_CONF_INCLUDE_SIMPLE
+CFLAGS += -DLV_CONF_INCLUDE_SIMPLE 
 CFLAGS += -Wall -Wshadow -Wundef -Wmissing-prototypes -Wno-discarded-qualifiers -Wall -Wextra -Wno-unused-function 
 CFLAGS += -Wno-error=strict-prototypes -Wpointer-arith -fno-strict-aliasing -Wno-error=cpp -Wuninitialized -Wmaybe-uninitialized 
 CFLAGS += -Wno-unused-parameter -Wno-missing-field-initializers -Wtype-limits -Wsizeof-pointer-memaccess -Wno-format-nonliteral 
@@ -19,7 +19,7 @@ CFLAGS += -Wno-format-nonliteral -Wpointer-arith -Wno-cast-qual -Wmissing-protot
 CFLAGS += -Wno-discarded-qualifiers -Wformat-security -Wno-ignored-qualifiers -Wno-sign-compare
 
 LDFLAGS ?= -lm 
-LDFLAGS += -ldrm -lSDL2
+LDFLAGS += -ldrm -lSDL2 -L/opt/libjpeg-turbo/lib64 -Wl,-Bstatic -lturbojpeg -ljpeg -Wl,-Bdynamic
 #-lSDL2 -lavdevice -lavformat -lavcodec -lswscale -lavutil 
 BIN = demo.bin
 
@@ -41,7 +41,8 @@ CFLAGS += -I$(LVGL_DEMO_DIR)/lvgl/src
 CSRCS += $(shell find $(LVGL_DEMO_DIR)/ports/linux/ -type f -name '*.c')
 CFLAGS += -I$(LVGL_DEMO_DIR)/ports/linux
 
-CFLAGS += -I/usr/include/libdrm
+CFLAGS += -I/usr/include/libdrm 
+CFLAGS += -I/opt/libjpeg-turbo/include
 
 
 OBJEXT ?= .o

@@ -13,44 +13,94 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h> 
+#include <string.h>
+
 #include <jpeglib.h>
 #include <jerror.h>
+#include <jmorecfg.h>
 #include <setjmp.h>
 
 
-const char *images_get_next(const char *jpg,int *pic_size)
+struct  {
+    struct {
+        unsigned char *buff;
+        long size;
+    }file;
+
+    struct {
+        int index;
+        struct jpeg_decompress_struct object;
+        struct {
+            unsigned char *buff;
+            long size;
+            long off;
+
+            int width;
+            int height;
+        }bmp[2];
+    }decoder;
+}mng;
+
+
+
+void image_buff_remalloc(int resize)
+{
+    if(resize > mng.file.size) {
+        if(mng.file.buff != NULL) {
+            free(mng.file.buff);
+        }
+        mng.file.buff =malloc(resize);
+        mng.file.size =resize;
+    }
+}
+
+
+const char *images_get_next(const char *jpg)
 {
     static int conter=0;
     static char path[128];
     struct stat fstat;
 
-    sprintf(path,"%s.%d",jpg,conter);
+    sprintf(path,"%s%d",jpg,conter);
     if(stat(path,&fstat) == 0) {
         conter++;
-        *pic_size =fstat.st_size;
         return (const char *)path;
     }
-    else if(stat(path,&fstat) == 0)  {
+    else if(conter > 0) {
+        conter=0;
+        sprintf(path,"%s%d",jpg,conter);
+        if(stat(path,&fstat) == 0) {
+            conter++;
+            return (const char *)path;
+        }
+    }
+    else if(stat(jpg,&fstat) == 0)  {
         strcpy(path,jpg);
-        *pic_size =fstat.st_size;
         return (const char *)path;
     }
     return NULL;
 }
 
-int images_loading(const char *jpg,char *raw_buff,int size)
+int images_loading(const char *jpg)
 {
     int fd;
-    int len=0;
+    int fsize=0,len=0;
     if(jpg != NULL) {
         fd=open(jpg,O_RDONLY);
         if(fd > 0) {
-            if(lseek(fd,0,SEEK_SET) < 0) {
+            fsize =lseek(fd,0,SEEK_END);
+            if(fsize < 0) {
                 close(fd);
                 return -1;
             }
-        
-            len =read(fd,raw_buff,size);
+
+            if(lseek(fd,0,SEEK_SET) < 0){
+                close(fd);
+                return -1;
+            }
+
+            image_buff_remalloc(fsize);
+            len =read(fd,mng.file.buff,fsize);
             close(fd);
             return len;
         }
@@ -59,32 +109,171 @@ int images_loading(const char *jpg,char *raw_buff,int size)
 }
 
 
-int image_decode(const char *path,char *buff,int buff_size)
+
+struct my_error_mgr {
+  struct jpeg_error_mgr pub;
+  jmp_buf setjmp_buffer; 
+};
+
+typedef struct my_error_mgr *my_error_ptr;
+
+void image_copy(void *des,const void *src, long size,long des_size,long *off)
 {
-    const char *pic_path;
-    static int  raw_size=0;
-    static char *raw_buff=NULL;
+    if(des_size < (off + size)) {
+        memcpy(&des[*off],src,size);
+        *off +=size;
+    }
+}
 
-    int  pic_size=0;
-    pic_path =images_get_next(path, &pic_size);
-    if(pic_path !=NULL) {
+void my_error_exit(j_common_ptr cinfo)
+{
+    my_error_ptr myerr = (my_error_ptr)cinfo->err;
+    (*cinfo->err->output_message) (cinfo);
+    longjmp(myerr->setjmp_buffer, 1);
+}
 
-        if(pic_size > raw_size) {
-            if(raw_buff == NULL) {
-                raw_buff =malloc(pic_size);
-                raw_size =pic_size;
-            }
-            else {
-                free(raw_buff);
-                raw_buff =malloc(pic_size);
-                raw_size =pic_size;
-            }
+int image_jpeg_decompress(void)
+{
+/* Step 1: allocate and initialize JPEG decompression object */
+    struct my_error_mgr jerr;
+    struct jpeg_decompress_struct *cinfo;
+
+    cinfo =&(mng.decoder.object);
+
+    cinfo->err = jpeg_std_error(&jerr.pub);
+    jerr.pub.error_exit = my_error_exit;
+    if (setjmp(jerr.setjmp_buffer)) {
+        return 0;
+    }
+
+/* Step 2: specify data source (eg, a file) */
+    jpeg_mem_src(cinfo,mng.file.buff,mng.file.size);
+
+/* Step 3: read file parameters with jpeg_read_header() */
+    jpeg_read_header(cinfo, TRUE);
+    printf("image size %dx%d\n",cinfo->image_width, cinfo->image_height);
+
+
+    int index=mng.decoder.index & 1;
+    unsigned char *out_buff=mng.decoder.bmp[index].buff;
+    long buff_size =mng.decoder.bmp[index].size;
+    
+    long total_size =cinfo->image_width * cinfo->image_height * 4;
+    if(buff_size < total_size ) {
+        if(out_buff !=NULL) {
+            free(out_buff);
         }
+        out_buff=malloc(total_size);
+        buff_size=total_size;
 
-        if(images_loading(pic_path,raw_buff,pic_size) > 0) {
-            int width,height,channels;
-            
+        mng.decoder.bmp[index].buff =out_buff;
+        mng.decoder.bmp[index].size =buff_size;
+    }
+
+    long out_off =0;
+    mng.decoder.bmp[index].off=0;
+
+/* Step 4: set parameters for decompression */
+    cinfo->out_color_space = JCS_RGB;
+    cinfo->dct_method = JDCT_FASTEST;
+    
+/* Step 5: Start decompressor */
+    jpeg_start_decompress(cinfo);
+
+
+    JSAMPARRAY buffer = NULL;
+    J12SAMPARRAY buffer12 = NULL;
+    int col;
+    int row_stride; 
+    int little_endian = 1;
+
+/* Samples per row in output buffer */
+    row_stride = cinfo->output_width * cinfo->output_components;
+
+    /* Make a one-row-high sample array that will go away when done with image */
+    if (cinfo->data_precision == 12) {
+        buffer12 = (J12SAMPARRAY)(*cinfo->mem->alloc_sarray)((j_common_ptr)cinfo, JPOOL_IMAGE, row_stride, 1);
+    }
+    else {
+        buffer = (*cinfo->mem->alloc_sarray)((j_common_ptr)cinfo, JPOOL_IMAGE, row_stride, 1);
+    }
+        
+
+  /* Step 6: while (scan lines remain to be read) */
+
+  /* Here we use the library's state variable cinfo->output_scanline as the
+   * loop counter, so that we don't have to keep track ourselves.
+   */
+    if (cinfo->data_precision == 12) {
+        while (cinfo->output_scanline < cinfo->output_height) {
+            (void)jpeg12_read_scanlines(cinfo, buffer12, 1);
+            if (*(char *)&little_endian == 1) {
+                for (col = 0; col < row_stride; col++) {
+                    buffer12[0][col] = ((buffer12[0][col] & 0xFF) << 8) | ((buffer12[0][col] >> 8) & 0xFF);
+                }
+            }
+            image_copy(out_buff,buffer12[0],row_stride * sizeof(J12SAMPLE),buff_size,&out_off);
+        }
+    } 
+    else {
+        while (cinfo->output_scanline < cinfo->output_height) {
+            jpeg_read_scanlines(cinfo, buffer, 1);
+            image_copy(out_buff,buffer[0],row_stride,buff_size,&out_off);
+        }
+  }
+
+/* Step 7: Finish decompression */
+    jpeg_finish_decompress(cinfo);
+
+/* Step 8: Release JPEG decompression object */
+
+    mng.decoder.bmp[index].off =out_off;
+    return out_off;
+}
+
+
+void image_init(void)
+{
+    memset(&mng,0,sizeof(mng));
+    jpeg_create_decompress(&(mng.decoder.object));
+}
+
+
+void image_deinit(void)
+{
+    if((mng.file.size > 0) && (mng.file.buff !=NULL)){
+        free(mng.file.buff);
+    }
+
+    if((mng.decoder.bmp[0].size >0) && (mng.decoder.bmp[0].buff !=NULL)) {
+        free(mng.decoder.bmp[0].buff);
+    }
+
+    if((mng.decoder.bmp[1].size >0) && (mng.decoder.bmp[1].buff !=NULL)) {
+        free(mng.decoder.bmp[1].buff);
+    }
+
+    jpeg_destroy_decompress(&mng.decoder.object);
+    memset(&mng,0,sizeof(mng));
+}
+
+int image_decode(const char *jpg_path,unsigned char **buff,long *len,int *width,int *height)
+{
+    const char *img_path;
+    int index=0;
+    img_path =images_get_next(jpg_path);
+    if(img_path !=NULL) {
+        if(images_loading(img_path) > 0) {
+            printf("loading image %s\n",img_path);
+            if(image_jpeg_decompress() >= 0) {
+                index =mng.decoder.index;
+                *buff =mng.decoder.bmp[index].buff;
+                *len =mng.decoder.bmp[index].off;
+                *width =mng.decoder.bmp[index].width;
+                *height =mng.decoder.bmp[index].height;
+                return 0;
+            }
         }
     }
-    return 0;
+    return -1;
 }
