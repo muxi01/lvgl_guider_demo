@@ -15,7 +15,7 @@ extern "C" {
 
 extern void image_init(void);
 extern void image_deinit(void);
-extern int image_decode(const char *jpg_path,unsigned char **buff,long *len,int *width,int *height);
+extern lv_image_dsc_t  *image_decode(const char *jpg_path);
 
 #ifdef __cplusplus
 }

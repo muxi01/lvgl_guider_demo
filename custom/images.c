@@ -20,9 +20,13 @@
 #include <jmorecfg.h>
 #include <setjmp.h>
 
+#define uint64 unsigned long long
+#define BMP_SUM     4
+#define BMP_MASK    3
 
 struct  {
     struct {
+        unsigned char *mem;
         unsigned char *buff;
         long size;
     }file;
@@ -31,25 +35,35 @@ struct  {
         int index;
         struct jpeg_decompress_struct object;
         struct {
+            lv_image_dsc_t dsc;
+            unsigned char *mem;
             unsigned char *buff;
             long size;
             long off;
 
             int width;
             int height;
-        }bmp[2];
+
+            
+        }bmp[BMP_SUM];
     }decoder;
 }mng;
 
 
+void *image_aline8(void *mem)
+{
+    uint64 addr=(uint64)mem;
+    return (void *)(addr & 0xfffffffffffffff7 + 8);
+}
 
 void image_buff_remalloc(int resize)
 {
     if(resize > mng.file.size) {
-        if(mng.file.buff != NULL) {
-            free(mng.file.buff);
+        if((mng.file.buff != NULL) && (mng.file.mem !=NULL)){
+            free(mng.file.mem);
         }
-        mng.file.buff =malloc(resize);
+        mng.file.mem =malloc(resize + 16);
+        mng.file.buff =image_aline8(mng.file.mem);
         mng.file.size =resize;
     }
 }
@@ -151,26 +165,28 @@ int image_jpeg_decompress(void)
 
 /* Step 3: read file parameters with jpeg_read_header() */
     jpeg_read_header(cinfo, TRUE);
-    printf("image size %dx%d\n",cinfo->image_width, cinfo->image_height);
+    // printf("image size %dx%d\n",cinfo->image_width, cinfo->image_height);
 
 
-    int index=mng.decoder.index & 1;
-    unsigned char *out_buff=mng.decoder.bmp[index].buff;
-    long buff_size =mng.decoder.bmp[index].size;
-    
+
+    int index=mng.decoder.index & BMP_MASK;
     long total_size =cinfo->image_width * cinfo->image_height * 4;
-    if(buff_size < total_size ) {
-        if(out_buff !=NULL) {
-            free(out_buff);
-        }
-        out_buff=malloc(total_size);
-        buff_size=total_size;
 
-        mng.decoder.bmp[index].buff =out_buff;
-        mng.decoder.bmp[index].size =buff_size;
+    mng.decoder.bmp[index].height =cinfo->image_height;
+    mng.decoder.bmp[index].width =cinfo->image_width;
+
+    if(mng.decoder.bmp[index].size < total_size ) {
+        if(mng.decoder.bmp[index].mem !=NULL) {
+            free(mng.decoder.bmp[index].mem);
+        }
+        mng.decoder.bmp[index].mem=malloc(total_size + 16);
+        mng.decoder.bmp[index].size =total_size;
+        mng.decoder.bmp[index].buff =image_aline8(mng.decoder.bmp[index].mem); 
     }
 
     long out_off =0;
+    long buff_size =mng.decoder.bmp[index].size;
+    unsigned char *out_buff=mng.decoder.bmp[index].buff;
     mng.decoder.bmp[index].off=0;
 
 /* Step 4: set parameters for decompression */
@@ -241,39 +257,56 @@ void image_init(void)
 
 void image_deinit(void)
 {
-    if((mng.file.size > 0) && (mng.file.buff !=NULL)){
-        free(mng.file.buff);
+    if((mng.file.size > 0) && (mng.file.mem !=NULL)){
+        free(mng.file.mem);
     }
 
-    if((mng.decoder.bmp[0].size >0) && (mng.decoder.bmp[0].buff !=NULL)) {
-        free(mng.decoder.bmp[0].buff);
+    if((mng.decoder.bmp[0].size >0) && (mng.decoder.bmp[0].mem !=NULL)) {
+        free(mng.decoder.bmp[0].mem);
     }
 
-    if((mng.decoder.bmp[1].size >0) && (mng.decoder.bmp[1].buff !=NULL)) {
-        free(mng.decoder.bmp[1].buff);
+    if((mng.decoder.bmp[1].size >0) && (mng.decoder.bmp[1].mem !=NULL)) {
+        free(mng.decoder.bmp[1].mem);
     }
 
     jpeg_destroy_decompress(&mng.decoder.object);
     memset(&mng,0,sizeof(mng));
 }
 
-int image_decode(const char *jpg_path,unsigned char **buff,long *len,int *width,int *height)
+
+lv_image_dsc_t  *image_describe(void)
+{
+    lv_image_dsc_t  *img;
+    int index =mng.decoder.index & BMP_MASK;
+    img = &(mng.decoder.bmp[index].dsc);
+
+    img->header.magic =LV_IMAGE_HEADER_MAGIC;
+    img->header.cf   =LV_COLOR_FORMAT_RGB888;
+    img->header.flags =0;
+    img->header.w =mng.decoder.bmp[index].width;
+    img->header.h =mng.decoder.bmp[index].height;
+    img->header.stride = mng.decoder.bmp[index].width * 3;
+
+    img->data =mng.decoder.bmp[index].buff;
+    img->data_size =mng.decoder.bmp[index].off;
+    printf("image info:idx[%d] %dx%d.%d\n",index,img->header.w,img->header.h,img->data_size);
+
+    mng.decoder.index++;
+    return img;
+}
+
+
+lv_image_dsc_t  *image_decode(const char *jpg_path)
 {
     const char *img_path;
-    int index=0;
     img_path =images_get_next(jpg_path);
     if(img_path !=NULL) {
         if(images_loading(img_path) > 0) {
             printf("loading image %s\n",img_path);
             if(image_jpeg_decompress() >= 0) {
-                index =mng.decoder.index;
-                *buff =mng.decoder.bmp[index].buff;
-                *len =mng.decoder.bmp[index].off;
-                *width =mng.decoder.bmp[index].width;
-                *height =mng.decoder.bmp[index].height;
-                return 0;
+                return image_describe();
             }
         }
     }
-    return -1;
+    return NULL;
 }

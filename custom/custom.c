@@ -90,40 +90,29 @@ void set_connected_state(lv_ui *ui, bool state)
 }
 
 
-void custom_image_show(lv_obj_t * obj,const unsigned char *data,long size,int w,int h)
+
+void display_update(void *args)
 {
-    lv_image_dsc_t img;
-
-    img.header.magic =LV_IMAGE_HEADER_MAGIC;
-    img.header.cf   =LV_COLOR_FORMAT_RGB888;
-    img.header.flags =LV_IMAGE_FLAGS_CUSTOM_DRAW;
-
-    img.header.w =w;
-    img.header.h =h;
-    img.header.stride = w * 3;
-
-    img.data =data;
-    img.data_size =size;
-    lv_image_set_src(obj, &img);
+    st_update_info update;
+    update =*(st_update_info *)args;
+    lv_image_set_src(update.img_obj, update.img_dsc);
 }
 
 void *custom_thread(void *args)
 {
     lv_ui *ui =(lv_ui *)args;
-    
-    int w,h;
-    long length;
-    unsigned char *buff;
+    st_update_info  info;
     int path_len =strlen(setting.image);
     image_init();
     for (;;) {
         if(path_len > 3) {
-            if(image_decode(setting.image,&buff,&length,&w,&h) >=0){
-                usleep(1000 * 1000);
-                custom_image_show(ui->scr0_img_display,buff,length,w,h);
+            info.img_dsc =image_decode(setting.image);
+            if(info.img_dsc != NULL){
+                info.img_obj =ui->scr0_img_display;
+                lv_async_call(display_update, &info);
             }
         }
-        usleep(1000);
+        usleep(1000*1000);
     }
     image_deinit();
 }
