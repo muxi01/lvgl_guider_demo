@@ -21,7 +21,11 @@
 #include "misc/lv_types.h"
 #include <pthread.h>
 #include "images.h"
-
+#include <string.h>
+#include <semaphore.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <stdint.h>
 /*********************
  *      DEFINES
  *********************/
@@ -43,13 +47,13 @@ extern st_parmaters setting;
 /**
  * Create a demo application
  */
- void keyboard_input_cb(lv_event_t * e)
+ static void keyboard_input_cb(lv_event_t * e)
  {
 
  }
 
 
- void keyboard_init(lv_ui *ui)
+static void keyboard_init(lv_ui *ui)
 {
     lv_obj_t *scr;
     if(keyboard_ui == NULL) {
@@ -65,7 +69,7 @@ extern st_parmaters setting;
 }
 
 
- void keyboard_show(lv_event_t * e)
+static void keyboard_show(lv_event_t * e)
  {
     lv_ui *ui =lv_event_get_param(e);
     static bool is_enable=true;
@@ -80,39 +84,91 @@ extern st_parmaters setting;
  }
 
 
-void set_connected_state(lv_ui *ui, bool state)
+static void set_connected_state(lv_ui *ui, bool state)
 {
     lv_obj_set_flag(ui->scr0_btn_enable_key,LV_OBJ_FLAG_HIDDEN,true);
-    lv_obj_set_flag(ui->scr0_img_display,LV_OBJ_FLAG_HIDDEN,false);
-    lv_obj_set_flag(ui->scr0_cvs_displayer,LV_OBJ_FLAG_HIDDEN,true);
+    lv_obj_set_flag(ui->scr0_img_display,LV_OBJ_FLAG_HIDDEN,true);
+    lv_obj_set_flag(ui->scr0_cvs_displayer,LV_OBJ_FLAG_HIDDEN,false);
     lv_obj_set_flag(ui->scr0_lb_status0,LV_OBJ_FLAG_HIDDEN,true);
     lv_obj_set_flag(ui->scr0_lb_connecting,LV_OBJ_FLAG_HIDDEN,true);
 }
 
 
 
-void display_update(void *args)
+
+static void custom_limited(long fps){
+    struct timeval tv;
+    static long long last=0,current=0;
+    long long interval =1000000LL / fps;
+    long long error,delay;
+
+    gettimeofday(&tv, NULL);
+    current =tv.tv_sec * 1000000LL + tv.tv_usec;
+
+    if(last !=0) {
+        error =current - last;
+        delay =interval - error;
+        if(delay > 0) {
+            usleep(delay);
+            gettimeofday(&tv, NULL);
+            last =tv.tv_sec * 1000000LL + tv.tv_usec;
+        } else {
+            last = current;
+        }
+    }
+    else {
+        last = current;
+    }
+}
+
+
+typedef struct update_info {
+    st_bit_map  *bit_map;
+    lv_obj_t *cvs_obj;
+    sem_t *sem;
+}st_update_info;
+
+
+static void custom_display(void *args)
 {
     st_update_info update;
+    st_bit_map  *bmap;
+
     update =*(st_update_info *)args;
-    lv_image_set_src(update.img_obj, update.img_dsc);
+    bmap =update.bit_map;
+
+    lv_canvas_set_buffer(update.cvs_obj,bmap->buff,bmap->width,bmap->height,LV_COLOR_FORMAT_RGB888);
+    lv_obj_invalidate(update.cvs_obj);
+    sem_post(update.sem);
 }
 
 void *custom_thread(void *args)
 {
     lv_ui *ui =(lv_ui *)args;
-    st_update_info  info;
+    st_update_info  update;
+    sem_t sem;
     int path_len =strlen(setting.image);
-    image_init();
+    sem_init(&sem,0,1);
+    image_init(setting.width,setting.height);
+
     for (;;) {
         if(path_len > 3) {
-            info.img_dsc =image_decode(setting.image);
-            if(info.img_dsc != NULL){
-                info.img_obj =ui->scr0_img_display;
-                lv_async_call(display_update, &info);
+            update.bit_map =image_decode(setting.image);
+            if(update.bit_map != NULL){
+                update.cvs_obj =ui->scr0_cvs_displayer;
+                update.sem =&sem;
+                sem_wait(&sem);
+                if(LV_RESULT_OK != lv_async_call(custom_display, &update)){
+                    printf("fialed to call lv_async_call\n");
+                    sem_post(update.sem);
+                    usleep(1000*1000);
+                }
             }
+            custom_limited(10);
         }
-        usleep(1000*1000);
+        else {
+            usleep(1000*1000);
+        }
     }
     image_deinit();
 }

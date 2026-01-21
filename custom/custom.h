@@ -16,13 +16,6 @@ extern "C" {
 #include "gui_guider.h"
 #include "main.h"
 
-
-typedef struct update_info {
-    lv_image_dsc_t  *img_dsc;
-    lv_obj_t *img_obj;
-}st_update_info;
-
-
 void custom_init(lv_ui *ui);
 void *custom_thread(void *args);
 

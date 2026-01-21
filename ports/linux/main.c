@@ -17,7 +17,9 @@
 #include "custom.h"
 #include "main.h"
 #include <pthread.h>
-
+#include <unistd.h>
+#include <sys/time.h>
+#include <stdint.h>
 
 lv_ui guider_ui;
 pthread_t video_thread;
@@ -152,6 +154,32 @@ static int parse_args(int argc,char **argv)
 
 
 
+static void limited(long fps){
+    struct timeval tv;
+    static long long last=0,current=0;
+    long long interval =1000000LL / fps;
+    long long error,delay;
+
+    gettimeofday(&tv, NULL);
+    current =tv.tv_sec * 1000000LL + tv.tv_usec;
+
+    if(last !=0) {
+        error =current - last;
+        delay =interval - error;
+        if(delay > 0) {
+            usleep(delay);
+            gettimeofday(&tv, NULL);
+            last =tv.tv_sec * 1000000LL + tv.tv_usec;
+        } else {
+            last = current;
+        }
+    }
+    else {
+        last = current;
+    }
+}
+
+
 int main(int argc,char **argv)
 {
     parse_args(argc,argv);
@@ -165,12 +193,11 @@ int main(int argc,char **argv)
     custom_init(&guider_ui);
     pthread_create(&video_thread, NULL, custom_thread, &guider_ui);
 
-    uint32_t idle_time;
     /* Handle LVGL tasks */
     while(1) {
         /* Return the time to the next timer execution */
-        idle_time = lv_timer_handler();
-	    usleep(idle_time * 1000);
+        lv_timer_handler();
+	    limited(100);
     }
     return 0;
 }

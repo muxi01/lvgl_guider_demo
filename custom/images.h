@@ -13,9 +13,18 @@
 extern "C" {
 #endif
 
-extern void image_init(void);
+struct _bmap{
+    unsigned char *mem;
+    unsigned char *buff;
+    long size;
+    int width;
+    int height;
+};
+typedef struct _bmap st_bit_map;
+
+extern void image_init(int w,int h);
 extern void image_deinit(void);
-extern lv_image_dsc_t  *image_decode(const char *jpg_path);
+extern st_bit_map *image_decode(const char *jpg_path);
 
 #ifdef __cplusplus
 }
