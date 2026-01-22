@@ -7,7 +7,7 @@ LVGL_PATH := $(LVGL_DEMO_DIR)/lvgl
 CFLAGS := -O0 -g  
 CFLAGS += -I$(LVGL_DEMO_DIR)
 
-CFLAGS += -DLV_CONF_INCLUDE_SIMPLE 
+CFLAGS += -DLV_CONF_INCLUDE_SIMPLE -DLV_USE_GUIDER_SIMULATOR=0
 CFLAGS += -Wall -Wshadow -Wundef -Wmissing-prototypes -Wno-discarded-qualifiers -Wall -Wextra -Wno-unused-function 
 CFLAGS += -Wno-error=strict-prototypes -Wpointer-arith -fno-strict-aliasing -Wno-error=cpp -Wuninitialized -Wmaybe-uninitialized 
 CFLAGS += -Wno-unused-parameter -Wno-missing-field-initializers -Wtype-limits -Wsizeof-pointer-memaccess -Wno-format-nonliteral 
@@ -69,3 +69,7 @@ default: $(AOBJS) $(COBJS)
 
 clean: 
 	rm -f $(BIN) $(AOBJS) $(COBJS)
+
+test:
+	./demo.bin -i ./pic.jpg -m /dev/input/event2
+	

@@ -337,7 +337,7 @@ st_bit_map  *image_decode(const char *jpg_path)
     img_path =images_get_next(jpg_path);
     if(img_path !=NULL) {
         if(images_loading(img_path) > 0) {
-            printf("loading image %s .%d\n",img_path,count++);
+            printf("loading image %s .%ld\n",img_path,count++);
             if(image_jpeg_decompress() >= 0) {
                 return get_bit_map();
             }

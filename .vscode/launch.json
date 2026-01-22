@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/demo.bin",
-            "args": [ "-i","${workspaceFolder}/pic.jpg" ],
+            "args": [ "-i","${workspaceFolder}/pic.jpg","-m","/dev/input/event2"],
             "stopAtEntry": true,
             "cwd": "${workspaceFolder}",
             "environment": [

@@ -16,6 +16,13 @@ extern "C" {
 #include "gui_guider.h"
 #include "main.h"
 
+
+ typedef enum _ui_level {
+    UI_LEVEL_NORMAL=0,
+    UI_LEVEL_UNREGISTER,
+    UI_LEVEL_OFFLINE,
+}ui_level_type;
+
 void custom_init(lv_ui *ui);
 void *custom_thread(void *args);
 

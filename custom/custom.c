@@ -38,7 +38,7 @@
  *  STATIC PROTOTYPES
  **********************/
 static lv_obj_t *keyboard_ui=NULL;
-
+static lv_obj_t *keyboard_layer=NULL;
 extern st_parmaters setting;
 /**********************
  *  STATIC VARIABLES
@@ -55,42 +55,86 @@ extern st_parmaters setting;
 
 static void keyboard_init(lv_ui *ui)
 {
-    lv_obj_t *scr;
-    if(keyboard_ui == NULL) {
-        scr =lv_scr_act();
-        int32_t w =lv_obj_get_width(scr) * 8 / 10;
-        int32_t h =lv_obj_get_height(scr) * 6 / 10;
+    int32_t x,y,w,h;
+    if((keyboard_layer == NULL) && (keyboard_ui == NULL)) {
+        lv_obj_t * parent = lv_layer_top();
+        keyboard_layer = lv_obj_create(parent);
 
-        keyboard_ui = lv_keyboard_create(ui->scr0_g_kb_top_layer);
+        x =lv_obj_get_x(ui->screen_ctn_key_dummy);
+        y =lv_obj_get_y(ui->screen_ctn_key_dummy);
+        w =lv_obj_get_width(ui->screen_ctn_key_dummy);
+        h =lv_obj_get_height(ui->screen_ctn_key_dummy);
+
+
+        lv_obj_set_size(keyboard_layer,w,h);
+        lv_obj_set_pos(keyboard_layer,x,y);
+
+        lv_obj_set_style_bg_opa(keyboard_layer, LV_OPA_TRANSP, 0);
+        lv_obj_clear_flag(keyboard_layer, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_add_flag(keyboard_layer, LV_OBJ_FLAG_HIDDEN);
+
+
+        keyboard_ui =lv_keyboard_create(keyboard_layer);
         lv_obj_set_size(keyboard_ui, w, h);
-        lv_obj_align(keyboard_ui, LV_ALIGN_CENTER, 0, h * 3 / 10);
-        lv_obj_add_event_cb(keyboard_ui, keyboard_input_cb, LV_EVENT_KEY, NULL);
+        
+        lv_obj_align(keyboard_ui, LV_ALIGN_CENTER, 0,0);
+        lv_obj_add_event_cb(keyboard_ui, keyboard_input_cb, LV_EVENT_ALL, ui);
     }
 }
 
 
 static void keyboard_show(lv_event_t * e)
  {
-    lv_ui *ui =lv_event_get_param(e);
-    static bool is_enable=true;
-    if(1) {
-
+    static bool is_enable=false;
+    lv_event_code_t code = lv_event_get_code(e);
+    if(code == LV_EVENT_CLICKED) {
         is_enable =!is_enable;
-        keyboard_init(ui);
-        lv_obj_set_flag(keyboard_ui,LV_OBJ_FLAG_HIDDEN,is_enable);
-        lv_obj_set_flag(ui->scr0_g_kb_top_layer, LV_OBJ_FLAG_HIDDEN,is_enable);
-        printf("%s %d",__FUNCTION__,__LINE__);
+        lv_obj_set_flag(keyboard_layer,LV_OBJ_FLAG_HIDDEN,!is_enable);
     }
  }
 
 
-static void set_connected_state(lv_ui *ui, bool state)
+
+static void custom_level_ui(lv_ui *ui, ui_level_type level)
 {
-    lv_obj_set_flag(ui->scr0_btn_enable_key,LV_OBJ_FLAG_HIDDEN,true);
-    lv_obj_set_flag(ui->scr0_img_display,LV_OBJ_FLAG_HIDDEN,true);
-    lv_obj_set_flag(ui->scr0_cvs_displayer,LV_OBJ_FLAG_HIDDEN,false);
-    lv_obj_set_flag(ui->scr0_lb_status0,LV_OBJ_FLAG_HIDDEN,true);
-    lv_obj_set_flag(ui->scr0_lb_connecting,LV_OBJ_FLAG_HIDDEN,true);
+    lv_obj_set_flag(ui->screen_ctn_key_dummy,LV_OBJ_FLAG_HIDDEN,true);
+    switch(level) {
+        case UI_LEVEL_OFFLINE: {
+            lv_obj_set_flag(ui->screen_lbr_waiting,LV_OBJ_FLAG_HIDDEN,false);
+            lv_obj_set_flag(ui->screen_img_default,LV_OBJ_FLAG_HIDDEN,false);
+
+            lv_obj_set_flag(ui->screen_win_details,LV_OBJ_FLAG_HIDDEN,true);
+            lv_obj_set_flag(ui->screen_ctn_authority,LV_OBJ_FLAG_HIDDEN,true);
+            lv_obj_set_flag(ui->screen_btn_keyboard,LV_OBJ_FLAG_HIDDEN,true);
+            lv_obj_set_flag(ui->screen_cvs_display,LV_OBJ_FLAG_HIDDEN,true);
+
+            
+        }
+        break;
+
+        case UI_LEVEL_UNREGISTER:{  
+            lv_obj_set_flag(ui->screen_ctn_authority,LV_OBJ_FLAG_HIDDEN,false);
+            lv_obj_set_flag(ui->screen_btn_keyboard,LV_OBJ_FLAG_HIDDEN,false);
+            lv_obj_set_flag(ui->screen_cvs_display,LV_OBJ_FLAG_HIDDEN,false);
+
+            
+            lv_obj_set_flag(ui->screen_win_details,LV_OBJ_FLAG_HIDDEN,true);
+            lv_obj_set_flag(ui->screen_lbr_waiting,LV_OBJ_FLAG_HIDDEN,true);
+            lv_obj_set_flag(ui->screen_img_default,LV_OBJ_FLAG_HIDDEN,true);
+        }
+        break;
+
+        default:{
+            lv_obj_set_flag(ui->screen_btn_keyboard,LV_OBJ_FLAG_HIDDEN,false);
+            lv_obj_set_flag(ui->screen_cvs_display,LV_OBJ_FLAG_HIDDEN,false);
+
+            lv_obj_set_flag(ui->screen_ctn_authority,LV_OBJ_FLAG_HIDDEN,true);
+            lv_obj_set_flag(ui->screen_win_details,LV_OBJ_FLAG_HIDDEN,true);
+            lv_obj_set_flag(ui->screen_lbr_waiting,LV_OBJ_FLAG_HIDDEN,true);
+            lv_obj_set_flag(ui->screen_img_default,LV_OBJ_FLAG_HIDDEN,true);
+        }
+        break;
+    }
 }
 
 
@@ -151,11 +195,12 @@ void *custom_thread(void *args)
     sem_init(&sem,0,1);
     image_init(setting.width,setting.height);
 
+    // path_len=0;
     for (;;) {
         if(path_len > 3) {
             update.bit_map =image_decode(setting.image);
             if(update.bit_map != NULL){
-                update.cvs_obj =ui->scr0_cvs_displayer;
+                update.cvs_obj =ui->screen_cvs_display;
                 update.sem =&sem;
                 sem_wait(&sem);
                 if(LV_RESULT_OK != lv_async_call(custom_display, &update)){
@@ -164,7 +209,7 @@ void *custom_thread(void *args)
                     usleep(1000*1000);
                 }
             }
-            custom_limited(10);
+            custom_limited(60);
         }
         else {
             usleep(1000*1000);
@@ -177,8 +222,11 @@ void *custom_thread(void *args)
 void custom_init(lv_ui *ui)
 {
     /* Add your codes here */
-    lv_obj_add_event_cb(ui->scr0_btn_enable_key, keyboard_show, LV_EVENT_CLICKED,ui); 
-    set_connected_state(ui,true);
+    keyboard_init(ui);
+    custom_level_ui(ui,UI_LEVEL_NORMAL);
+    lv_obj_add_event_cb(ui->screen_btn_keyboard, keyboard_show, LV_EVENT_CLICKED,ui); 
+    
+    
 }
 
 

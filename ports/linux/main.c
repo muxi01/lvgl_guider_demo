@@ -20,6 +20,8 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <stdint.h>
+#include <string.h>
+
 
 lv_ui guider_ui;
 pthread_t video_thread;

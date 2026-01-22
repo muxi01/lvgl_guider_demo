@@ -1,1 +1,1 @@
-GEN_CSRCS += _horse_RGB565A8_800x480.c
+GEN_CSRCS += _horse_RGB888_800x480.c
