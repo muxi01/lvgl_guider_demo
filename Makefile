@@ -19,7 +19,7 @@ CFLAGS += -Wno-format-nonliteral -Wpointer-arith -Wno-cast-qual -Wmissing-protot
 CFLAGS += -Wno-discarded-qualifiers -Wformat-security -Wno-ignored-qualifiers -Wno-sign-compare
 
 LDFLAGS ?= -lm 
-LDFLAGS += -ldrm -lSDL2 -L/opt/libjpeg-turbo/lib64 -Wl,-Bstatic -lturbojpeg -ljpeg -Wl,-Bdynamic
+LDFLAGS += -L/opt/libjpeg-turbo/lib64 -Wl,-Bstatic -lturbojpeg -ljpeg -Wl,-Bdynamic
 #-lSDL2 -lavdevice -lavformat -lavcodec -lswscale -lavutil 
 BIN = demo.bin
 

@@ -199,7 +199,7 @@ int main(int argc,char **argv)
     while(1) {
         /* Return the time to the next timer execution */
         lv_timer_handler();
-	    limited(100);
+	    limited(60);
     }
     return 0;
 }

@@ -39,6 +39,7 @@
  **********************/
 static lv_obj_t *keyboard_ui=NULL;
 static lv_obj_t *keyboard_layer=NULL;
+static lv_timer_t *display_timer = NULL;
 extern st_parmaters setting;
 /**********************
  *  STATIC VARIABLES
@@ -165,6 +166,7 @@ static void custom_limited(long fps){
     }
 }
 
+#if 0
 
 typedef struct update_info {
     st_bit_map  *bit_map;
@@ -218,15 +220,65 @@ void *custom_thread(void *args)
     image_deinit();
 }
 
+#else 
+
+struct _play_tick {
+    sem_t sem;
+    st_bit_map *bmap;
+}refresh;
+
+
+void *custom_thread(void *args)
+{
+    st_bit_map *bmap;
+    int path_len =strlen(setting.image);
+    sem_init(&refresh.sem,0,1);
+    image_init(setting.width,setting.height);
+
+    // path_len=0;
+    for (;;) {
+        if(path_len > 3) {
+            bmap =image_decode(setting.image);
+            if(bmap != NULL){
+                sem_wait(&refresh.sem);
+                refresh.bmap=bmap;
+            }
+            custom_limited(60);
+        }
+        else {
+            usleep(1000*1000);
+        }
+    }
+    image_deinit();
+}
+
+
+static void custom_display(lv_timer_t *ptimer)
+{
+    lv_obj_t *cvs_obj =(lv_obj_t *)lv_timer_get_user_data(ptimer);
+    if(refresh.bmap != NULL) {
+        lv_canvas_set_buffer(cvs_obj,refresh.bmap->buff,refresh.bmap->width,refresh.bmap->height,LV_COLOR_FORMAT_RGB888);
+        lv_obj_invalidate(cvs_obj);
+        refresh.bmap=NULL;
+        sem_post(&refresh.sem);
+    }
+}
+
+void custom_freash_timer(lv_obj_t *display_ui,int fps){
+    if(display_timer == NULL){
+        display_timer = lv_timer_create(custom_display, 1000/fps, display_ui);
+        lv_timer_set_repeat_count(display_timer, -1);
+    }
+}
+#endif 
 
 void custom_init(lv_ui *ui)
 {
     /* Add your codes here */
     keyboard_init(ui);
     custom_level_ui(ui,UI_LEVEL_NORMAL);
+    custom_freash_timer(ui->screen_cvs_display,60);
     lv_obj_add_event_cb(ui->screen_btn_keyboard, keyboard_show, LV_EVENT_CLICKED,ui); 
-    
-    
 }
 
 
