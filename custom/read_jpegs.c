@@ -98,28 +98,28 @@ int jpeg_loading(const char *path,char *pbuff,int size)
 void read_jpeg_thread(char *buff,int size)
 {
     int frame_size;
-    FIFOHandle fifo;
+    FIFOHandle_p fifo;
     const char *path;
      for(;;) {
         fifo=fifo_acquire();
-        if(fifo.data != NULL) {
+        if(fifo != NULL) {
             path =jpeg_get_next(setting.image);
             frame_size =jpeg_loading(path,buff,size);
             if(frame_size > 0) {
-                fifo.data_len =decode_jpeg_decompress(buff,frame_size,fifo.data,fifo.buf_size,&fifo.w,&fifo.h);
-                printf("image path: %s size:%d w:%d h:%d\n", path,fifo.data_len,fifo.w,fifo.h);
+                fifo->data_len =decode_jpeg_decompress(buff,frame_size,fifo->data,fifo->buf_size,&fifo->w,&fifo->h);
+                printf("image path: %s size:%ld w:%d h:%d\n", path,fifo->data_len,fifo->w,fifo->h);
 #if 1
-                for(int x=0;x<fifo.h;x++) {
-                    for(int y=0;y<fifo.w;y++) {
-                        int off =x * fifo.w * 4;
-                        fifo.data[off + 0] = 0xaa;
-                        fifo.data[off + 1] = 0xaa;
-                        fifo.data[off + 2] = 0xaa;
-                        fifo.data[off + 3] = 0xaa;
+                for(int x=0;x<fifo->h;x++) {
+                    for(int y=0;y<fifo->w;y++) {
+                        int off =x * fifo->w * 4;
+                        fifo->data[off + 0] = 0xaa;
+                        fifo->data[off + 1] = 0xaa;
+                        fifo->data[off + 2] = 0xaa;
+                        fifo->data[off + 3] = 0xaa;
                     }
                 }
 #endif
-                if(fifo.data_len > 0) {
+                if(fifo->data_len > 0) {
                     fifo_push(fifo);
                 }
                 else {

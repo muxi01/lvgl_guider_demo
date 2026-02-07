@@ -41,17 +41,18 @@ static void usb_fetch_limited(long fps){
     }
 }
 
-static int usb_featch_buffer(FIFOHandle *buff,int fps)
+static FIFOHandle_p usb_featch_buffer(int fps)
 {
+    FIFOHandle_p buff=NULL;
     for(int i=0;i<2;i++){
-        *buff=fifo_acquire();
-        if(buff->data == NULL) {
+        buff=fifo_acquire();
+        if(buff == NULL) {
             usb_fetch_limited(fps);
         } else {
-            return 0;
+            return buff;
         }
     }
-    return -1;
+    return NULL;
 }
 
 static uint64_t get_image_header(void)
@@ -105,18 +106,18 @@ void usb_fetch_thread(char *buff,int size) {
     int fd;
     int frame_size;
     const int fps=60;
-    FIFOHandle fifo;
+    FIFOHandle_p fifo;
     fd=open(setting.image,O_RDONLY);
     if(fd <=0 ){
         printf("failed to open %s.%d\n",setting.image,fd);
         return ;
     }
     for(;;) {
-        usb_featch_buffer(&fifo,fps);
+        fifo =usb_featch_buffer(fps);
         frame_size =usb_fetch_frame(fd,buff,size);
         if(frame_size > 0){
-            fifo.data_len =decode_jpeg_decompress(buff,frame_size,fifo.data,fifo.buf_size,&fifo.w,&fifo.h);
-            if(fifo.data_len > 0) {
+            fifo->data_len =decode_jpeg_decompress(buff,frame_size,fifo->data,fifo->buf_size,&fifo->w,&fifo->h);
+            if(fifo->data_len > 0) {
                 fifo_push(fifo);
             }
             else {

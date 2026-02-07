@@ -253,25 +253,23 @@ static void custom_draw_post_cb(lv_event_t *e)
     lv_obj_t *obj = lv_event_get_target(e);
     void *user_data = lv_event_get_user_data(e);
     if(code == LV_EVENT_DRAW_POST) {
-        FIFOHandle *fifo =(FIFOHandle *)user_data;
-        fifo_release(*fifo);
+        FIFOHandle_p fifo =(FIFOHandle *)user_data;
+        fifo_release(fifo);
         lv_obj_remove_event(obj,LV_EVENT_DRAW_POST);
-        fifo->data =NULL;
-        fifo->buf_id =-1;
     }
 }
 
 static void custom_display(lv_timer_t *ptimer)
 {
-    static FIFOHandle fifo={0};
+    FIFOHandle_p fifo;
     fifo =fifo_pop();
-    if(fifo.data != NULL) {
-        printf("fifo info: id:%d len:%ld w:%d h:%d\n",fifo.buf_id,fifo.data_len,fifo.w,fifo.h);
+    if(fifo != NULL) {
+        printf("fifo info: id:%d len:%ld w:%d h:%d\n",fifo->buf_id,fifo->data_len,fifo->w,fifo->h);
         lv_obj_t *cvs_obj =(lv_obj_t *)lv_timer_get_user_data(ptimer);
-        // lv_obj_add_event_cb(cvs_obj, custom_draw_post_cb, LV_EVENT_DRAW_POST, &fifo);
-        lv_canvas_set_buffer(cvs_obj,fifo.data,fifo.w,fifo.h,LV_COLOR_FORMAT_RGB888);
+        // lv_obj_add_event_cb(cvs_obj, custom_draw_post_cb, LV_EVENT_DRAW_POST, fifo);
+        lv_canvas_set_buffer(cvs_obj,fifo->data,fifo->w,fifo->h,LV_COLOR_FORMAT_RGB888);
         lv_obj_invalidate(cvs_obj); 
-        // fifo_release(fifo);
+        fifo_release(fifo);
     }
 }
 
