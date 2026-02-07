@@ -20,12 +20,18 @@
 #include "misc/lv_event.h"
 #include "misc/lv_types.h"
 #include <pthread.h>
-#include "images.h"
+#include <stdlib.h>
 #include <string.h>
 #include <semaphore.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <stdint.h>
+
+#include "decode.h"
+#include "read_jpegs.h"
+#include "usb_fetch.h"
+#include "loopbuffer.h"
+
 /*********************
  *      DEFINES
  *********************/
@@ -222,45 +228,50 @@ void *custom_thread(void *args)
 
 #else 
 
-struct _play_tick {
-    sem_t sem;
-    st_bit_map *bmap;
-}refresh;
-
-
 void *custom_thread(void *args)
 {
-    st_bit_map *bmap;
     int path_len =strlen(setting.image);
-    sem_init(&refresh.sem,0,1);
-    image_init(setting.width,setting.height);
+    if(path_len > 3) {
+        int  jpeg_size =setting.width*setting.height*4;
+        char *jpeg_buff =malloc(jpeg_size);
+        decode_init();
 
-    // path_len=0;
-    for (;;) {
-        if(path_len > 3) {
-            bmap =image_decode(setting.image);
-            if(bmap != NULL){
-                sem_wait(&refresh.sem);
-                refresh.bmap=bmap;
-            }
-            custom_limited(60);
+        fifo_init(setting.width,setting.height);
+        if(strstr(setting.image,"/dev/tty") == NULL) {
+            read_jpeg_thread(jpeg_buff, jpeg_size);
+        } else {
+            usb_fetch_thread(jpeg_buff,jpeg_size);
         }
-        else {
-            usleep(1000*1000);
-        }
+        free(jpeg_buff);
+        decode_uninit();  
     }
-    image_deinit();
 }
 
+static void custom_draw_post_cb(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t *obj = lv_event_get_target(e);
+    void *user_data = lv_event_get_user_data(e);
+    if(code == LV_EVENT_DRAW_POST) {
+        FIFOHandle *fifo =(FIFOHandle *)user_data;
+        fifo_release(*fifo);
+        lv_obj_remove_event(obj,LV_EVENT_DRAW_POST);
+        fifo->data =NULL;
+        fifo->buf_id =-1;
+    }
+}
 
 static void custom_display(lv_timer_t *ptimer)
 {
-    lv_obj_t *cvs_obj =(lv_obj_t *)lv_timer_get_user_data(ptimer);
-    if(refresh.bmap != NULL) {
-        lv_canvas_set_buffer(cvs_obj,refresh.bmap->buff,refresh.bmap->width,refresh.bmap->height,LV_COLOR_FORMAT_RGB888);
-        lv_obj_invalidate(cvs_obj);
-        refresh.bmap=NULL;
-        sem_post(&refresh.sem);
+    static FIFOHandle fifo={0};
+    fifo =fifo_pop();
+    if(fifo.data != NULL) {
+        printf("fifo info: id:%d len:%ld w:%d h:%d\n",fifo.buf_id,fifo.data_len,fifo.w,fifo.h);
+        lv_obj_t *cvs_obj =(lv_obj_t *)lv_timer_get_user_data(ptimer);
+        // lv_obj_add_event_cb(cvs_obj, custom_draw_post_cb, LV_EVENT_DRAW_POST, &fifo);
+        lv_canvas_set_buffer(cvs_obj,fifo.data,fifo.w,fifo.h,LV_COLOR_FORMAT_RGB888);
+        lv_obj_invalidate(cvs_obj); 
+        // fifo_release(fifo);
     }
 }
 
@@ -280,6 +291,5 @@ void custom_init(lv_ui *ui)
     custom_freash_timer(ui->screen_cvs_display,60);
     lv_obj_add_event_cb(ui->screen_btn_keyboard, keyboard_show, LV_EVENT_CLICKED,ui); 
 }
-
 
 

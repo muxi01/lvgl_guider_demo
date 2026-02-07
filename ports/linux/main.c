@@ -195,6 +195,7 @@ int main(int argc,char **argv)
     custom_init(&guider_ui);
     pthread_create(&video_thread, NULL, custom_thread, &guider_ui);
 
+    usleep(1000*100);
     /* Handle LVGL tasks */
     while(1) {
         /* Return the time to the next timer execution */
