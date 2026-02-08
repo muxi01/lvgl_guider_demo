@@ -12,7 +12,8 @@
 
 
 static StaticFIFO g_fifo;
-
+static const uint64_t timeout=15*1000*1000;
+static const uint64_t time_1S=1000*1000*1000;
 int fifo_init(int w, int h) {
     static int initialized = 0;
 
@@ -56,13 +57,31 @@ int fifo_init(int w, int h) {
     initialized = 1;
     printf("[FIFO] init done capacity: %d, buffer size: %d bytes.\n", FIFO_BUF_COUNT,buf_size);
 }
+
+static int fifo_get_signal(void)
+{
+    struct timeval tv;
+    struct timespec ts;
+    gettimeofday(&tv, NULL);
+    ts.tv_sec = tv.tv_sec;
+    ts.tv_nsec = tv.tv_usec * 1000 + timeout;
+    if (ts.tv_nsec >= time_1S) {
+        ts.tv_sec++;
+        ts.tv_nsec -= time_1S;
+    }
+    int ret = pthread_cond_timedwait(&g_fifo.cond, &g_fifo.mutex, &ts);
+    return (ret != ETIMEDOUT);
+}
+
+
 FIFOHandle_p fifo_acquire(void) {
     FIFOHandle_p handle;
     pthread_mutex_lock(&g_fifo.mutex);
     if (g_fifo.count >= FIFO_BUF_COUNT) {
-        pthread_mutex_unlock(&g_fifo.mutex);
-        printf("[FIFO] buffer full.\n");
-        return NULL;
+        if(!fifo_get_signal() || g_fifo.count >= FIFO_BUF_COUNT){
+            pthread_mutex_unlock(&g_fifo.mutex);
+            return NULL;
+        }
     }
     handle = &(g_fifo.pool[g_fifo.tail]);
     handle->buf_id =g_fifo.tail;
@@ -89,13 +108,15 @@ void fifo_push(FIFOHandle_p handle) {
 
 FIFOHandle_p fifo_pop(void) {
     FIFOHandle_p handle=NULL;
-
     pthread_mutex_lock(&g_fifo.mutex);
-    if(g_fifo.count > 0) {
-        // pthread_cond_wait(&g_fifo.cond, &g_fifo.mutex);
-        handle =&(g_fifo.pool[g_fifo.head]);
-        handle->buf_id =g_fifo.head;
+    if(g_fifo.count == 0) {
+        if(!fifo_get_signal() || g_fifo.count == 0){
+            pthread_mutex_unlock(&g_fifo.mutex);
+            return NULL;
+        }
     }
+    handle =&(g_fifo.pool[g_fifo.head]);
+    handle->buf_id =g_fifo.head;
     pthread_mutex_unlock(&g_fifo.mutex);
     return handle;
 }

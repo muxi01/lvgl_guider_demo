@@ -41,20 +41,6 @@ static void usb_fetch_limited(long fps){
     }
 }
 
-static FIFOHandle_p usb_featch_buffer(int fps)
-{
-    FIFOHandle_p buff=NULL;
-    for(int i=0;i<2;i++){
-        buff=fifo_acquire();
-        if(buff == NULL) {
-            usb_fetch_limited(fps);
-        } else {
-            return buff;
-        }
-    }
-    return NULL;
-}
-
 static uint64_t get_image_header(void)
 {
     uint64_t select=FRAME_MAGIC_ID;
@@ -113,15 +99,12 @@ void usb_fetch_thread(char *buff,int size) {
         return ;
     }
     for(;;) {
-        fifo =usb_featch_buffer(fps);
+        fifo =fifo_acquire();
         frame_size =usb_fetch_frame(fd,buff,size);
         if(frame_size > 0){
             fifo->data_len =decode_jpeg_decompress(buff,frame_size,fifo->data,fifo->buf_size,&fifo->w,&fifo->h);
             if(fifo->data_len > 0) {
                 fifo_push(fifo);
-            }
-            else {
-                fifo_release(fifo);
             }
         }
         usb_fetch_limited(fps);

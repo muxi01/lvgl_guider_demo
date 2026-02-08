@@ -108,7 +108,7 @@ void read_jpeg_thread(char *buff,int size)
             if(frame_size > 0) {
                 fifo->data_len =decode_jpeg_decompress(buff,frame_size,fifo->data,fifo->buf_size,&fifo->w,&fifo->h);
                 printf("image path: %s size:%ld w:%d h:%d\n", path,fifo->data_len,fifo->w,fifo->h);
-#if 1
+#if 0
                 for(int x=0;x<fifo->h;x++) {
                     for(int y=0;y<fifo->w;y++) {
                         int off =x * fifo->w * 4;
@@ -121,9 +121,6 @@ void read_jpeg_thread(char *buff,int size)
 #endif
                 if(fifo->data_len > 0) {
                     fifo_push(fifo);
-                }
-                else {
-                    fifo_release(fifo);
                 }
             }
         }
