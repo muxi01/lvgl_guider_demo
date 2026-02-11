@@ -7,7 +7,7 @@ typedef struct  _parmaters {
     const char  *key_dev;
     const char  *image;
     const char  *audio;
-    int width,height,rotation;
+    int width,height,rotation,fps;
 }st_parmaters;
 
 

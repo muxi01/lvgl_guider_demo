@@ -29,6 +29,7 @@ void my_error_exit(j_common_ptr cinfo)
     my_error_ptr myerr = (my_error_ptr)cinfo->err;
     (*cinfo->err->output_message) (cinfo);
     longjmp(myerr->setjmp_buffer, 1);
+    printf("JPEG failed\n");
 }
 
 int decode_init(void)
@@ -78,7 +79,7 @@ int decode_jpeg_decompress(char *jpg_buff, int jpg_size,char *rgb_buff,int rgb_s
     long out_off=0;
 
 /* Step 4: set parameters for decompression */
-    cinfo->out_color_space = JCS_RGB;
+    cinfo->out_color_space = JCS_EXT_BGRX;
     cinfo->dct_method = JDCT_FASTEST;
     
 /* Step 5: Start decompressor */

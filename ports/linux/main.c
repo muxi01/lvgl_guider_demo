@@ -66,7 +66,7 @@ static void hal_init(void)
 
 static void help_info(const char *name)
 {
-    printf("%s [-v ] [-f fb] [-m mouse] [-k key] [-W width] [-H height] [ -R rotation ] [-i image] [ -a audio]\n\n",name);
+    printf("%s [-v ] [-f fb] [-m mouse] [-k key] [-W width] [-H height] [ -R rotation ] [-i image] [ -a audio] [-F fps]\n\n",name);
     printf(" -v : version\n");
     printf(" -m : input event of mouse\n");
     printf(" -k : input event of keyboard\n");
@@ -75,6 +75,7 @@ static void help_info(const char *name)
     printf(" -R : adjust the screen rotation angle [0 90 180 270] \n");
     printf(" -i : image source path \n");
     printf(" -a : sound card path \n");
+    printf(" -F : display fps\n");
 }
 
 
@@ -102,6 +103,7 @@ static int parse_args(int argc,char **argv)
     setting.image=image;
     setting.audio=audio;
     setting.rotation =0;
+    setting.fps =30;
     setting.width=800;
     setting.height=480;
 
@@ -118,6 +120,9 @@ static int parse_args(int argc,char **argv)
                 exit(0);
             break;
 
+            case 'F':
+                setting.fps =atoi(optarg);
+            break;
             case 'W':
                 setting.width =atoi(optarg);
             break;
@@ -145,11 +150,12 @@ static int parse_args(int argc,char **argv)
         }
     }
 
-    printf("fb      :%s\n",setting.fb_dev);
+    printf("fb      : %s\n",setting.fb_dev);
     printf("mouse   : %s\n",setting.mouse_dev);
     printf("keyboard: %s\n",setting.key_dev);
     printf("image   : %s\n",setting.image);
     printf("audio   : %s\n",setting.audio);
+    printf("fps     : %d\n",setting.fps);
     printf("screen info: %dx%d:R%d\n",setting.width,setting.height,setting.rotation);
     return 0;
 }
@@ -200,7 +206,7 @@ int main(int argc,char **argv)
     while(1) {
         /* Return the time to the next timer execution */
         lv_timer_handler();
-	    limited(60);
+	    limited(setting.fps);
     }
     return 0;
 }

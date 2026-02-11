@@ -267,7 +267,7 @@ static void custom_display(lv_timer_t *ptimer)
         printf("fifo info: id:%d len:%ld w:%d h:%d\n",fifo->buf_id,fifo->data_len,fifo->w,fifo->h);
         lv_obj_t *cvs_obj =(lv_obj_t *)lv_timer_get_user_data(ptimer);
         // lv_obj_add_event_cb(cvs_obj, custom_draw_post_cb, LV_EVENT_DRAW_POST, fifo);
-        lv_canvas_set_buffer(cvs_obj,fifo->data,fifo->w,fifo->h,LV_COLOR_FORMAT_RGB888);
+        lv_canvas_set_buffer(cvs_obj,fifo->data,fifo->w,fifo->h,LV_COLOR_FORMAT_XRGB8888);
         lv_obj_invalidate(cvs_obj); 
         fifo_release(fifo);
     }
@@ -286,7 +286,7 @@ void custom_init(lv_ui *ui)
     /* Add your codes here */
     keyboard_init(ui);
     custom_level_ui(ui,UI_LEVEL_NORMAL);
-    custom_freash_timer(ui->screen_cvs_display,60);
+    custom_freash_timer(ui->screen_cvs_display,setting.fps);
     lv_obj_add_event_cb(ui->screen_btn_keyboard, keyboard_show, LV_EVENT_CLICKED,ui); 
 }
 

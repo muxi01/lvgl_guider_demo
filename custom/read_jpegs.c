@@ -124,7 +124,7 @@ void read_jpeg_thread(char *buff,int size)
                 }
             }
         }
-        read_jpeg_limited(60);
+        read_jpeg_limited(setting.fps);
     }
 }
 

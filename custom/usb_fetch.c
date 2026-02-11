@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <termios.h>
 #include "usb_fetch.h"
 #include "loopbuffer.h"
 #include "main.h"
@@ -41,49 +42,72 @@ static void usb_fetch_limited(long fps){
     }
 }
 
-static uint64_t get_image_header(void)
+
+static int usb_search_header(int fd,int maxlen)
 {
-    uint64_t select=FRAME_MAGIC_ID;
-    select=(select << 32) | IMAGE_TYPE_JPG;
-    return select;
-}
-
-static int usb_fetch_frame(int fd,char *pbuff,int size) {
-    uint64_t header;
-    uint8_t discard[64];
-    image_frame_info info;
-    uint64_t select=get_image_header();
-
-    int nbytes = read(fd, &header, sizeof(uint64_t));
-    if((nbytes == sizeof(uint64_t)) && (header == select)) {
-        nbytes =read(fd, &info, sizeof(image_frame_info));
-        if(nbytes == sizeof(image_frame_info)) {
-            int readn=0;
-            int wanas =info.img_len;
-            int total =info.img_len;
-            if((pbuff != NULL) && (size >= info.img_len) && (info.img_len !=0)) {
-                nbytes =0;
-                do {
-                    nbytes =read(fd, pbuff + readn, wanas);
-                    readn +=nbytes;
-                    wanas -=nbytes;
-                }while(readn < info.img_len);
-                return info.img_len;
-            }
-            else if(info.img_len > 0){
-                do {
-                    if(total > sizeof(discard)) {
-                        wanas =sizeof(discard);
-                    } else {
-                        wanas =total;
-                    }
-                    nbytes =read(fd, &discard, wanas);
-                    total -=nbytes;
-                }while(total);
-            }
+    static const magic_id =FRAME_MAGIC_ID;
+    static const type_jpeg =IMAGE_TYPE_JPG;
+    image_frame_header_t header;
+    for(int len=0;len<maxlen;len+=sizeof(image_frame_header_t)) {
+        int nbytes = read(fd, &header, sizeof(image_frame_header_t));
+        if((nbytes == sizeof(image_frame_header_t)) && 
+            (header.img_len > 0) && 
+            (header.img_len <=maxlen) &&
+            (header.magic_id == magic_id)  && 
+            (header.img_type ==type_jpeg)) {
+            return header.img_len;
         }
     }
-    return -1;
+    return 0;
+}
+
+static int usb_tty_bulk_mode(int fd)
+{
+    struct termios tty;
+    tcgetattr(fd,&tty);
+    cfmakeraw(&tty);
+    tty.c_cflag &=~CSTOPB;
+    tty.c_cflag &=~CRTSCTS;
+    tty.c_cflag &=~ECHO;
+    tcsetattr(fd,TCSANOW,&tty);
+    return 0;
+}
+
+static int usb_fetch_frame(char *pbuff,int size) {
+    uint8_t discard[64];
+    int fd=open(setting.image,O_RDONLY);
+    if(fd <=0 ){
+        printf("failed to open %s.%d\n",setting.image,fd);
+        return -1;
+    }
+    usb_tty_bulk_mode(fd);
+    int img_len =usb_search_header(fd,size);
+    if(img_len > 0) {
+        int readn=0;
+        int nbytes=0;
+        int wanas =img_len;
+        int total =img_len;
+        if(pbuff != NULL) {
+            do {
+                nbytes =read(fd, pbuff + readn, wanas);
+                readn +=nbytes;
+                wanas -=nbytes;
+            }while(readn < img_len);
+        }
+        else {
+            do {
+                if(total > sizeof(discard)) {
+                    wanas =sizeof(discard);
+                } else {
+                    wanas =total;
+                }
+                nbytes =read(fd, &discard, wanas);
+                total -=nbytes;
+            }while(total);
+        }
+    }
+    close(fd);
+    return img_len;
 }
 
 
@@ -91,23 +115,17 @@ void usb_fetch_thread(char *buff,int size) {
 
     int fd;
     int frame_size;
-    const int fps=60;
     FIFOHandle_p fifo;
-    fd=open(setting.image,O_RDONLY);
-    if(fd <=0 ){
-        printf("failed to open %s.%d\n",setting.image,fd);
-        return ;
-    }
     for(;;) {
         fifo =fifo_acquire();
-        frame_size =usb_fetch_frame(fd,buff,size);
+        frame_size =usb_fetch_frame(buff,size);
         if(frame_size > 0){
+            printf("usb_fetch_frame size:%d\n",frame_size);
             fifo->data_len =decode_jpeg_decompress(buff,frame_size,fifo->data,fifo->buf_size,&fifo->w,&fifo->h);
             if(fifo->data_len > 0) {
                 fifo_push(fifo);
             }
         }
-        usb_fetch_limited(fps);
+        usb_fetch_limited(setting.fps);
     }
-    close(fd);
 }

@@ -71,5 +71,5 @@ clean:
 	rm -f $(BIN) $(AOBJS) $(COBJS)
 
 test:
-	./demo.bin -i ./pic.jpg -m /dev/input/event2
+	./demo.bin -i /dev/ttyGS0 -m /dev/input/event2 -R 270
 	
